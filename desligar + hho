@@ -1,0 +1,123 @@
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>   // inclui biblioteca de LCD serial I2C
+#include <TimerOne.h>            // http://playground.arduino.cc/Code/Timer1
+
+
+#define led 7            // pino led
+#define motor 12         // pino leitura da bomba de combustivel
+#define chave 13         // pino leitua pos chave
+#define desligar 2       // rele de desligar pos chave
+#define hho 3            // rele do gerador hho
+#define efie 4           // rele on/off enganador de sonda lambida EFIE
+#define mapCity 5        // rele on/off enganador sensor MAP
+#define mapRoad 6        // rele enganador sensor MAP, altera posicao City e Road
+
+LiquidCrystal_I2C LCD(0x27,16,2); // define pinos de ligação do LCD
+
+int motorOffCounter = 0; //conta tempo depois quem motor desligar 1 em 1 segundo
+int motorOnCounter = 0;  //conta tempo depois quem motor ligar 1 em 1 segundo
+
+
+
+void setup() {
+  pinMode(led, OUTPUT);
+  pinMode(motor, INPUT_PULLUP);
+  pinMode(chave, INPUT_PULLUP);
+  pinMode(desligar, OUTPUT);
+  pinMode(hho, OUTPUT);
+  pinMode(efie, OUTPUT);
+  pinMode(mapCity, OUTPUT);
+  pinMode(mapRoad, OUTPUT);
+  
+  digitalWrite(led, LOW);
+  digitalWrite(hho, HIGH);
+  digitalWrite(desligar, HIGH);
+  digitalWrite(efie, HIGH);
+  digitalWrite(mapCity, HIGH);
+  digitalWrite(mapRoad, HIGH);
+  
+  LCD.init();                           // initialize the lcd
+  Timer1.initialize();                  // Inicializa contador, sem argumentos, assume contar de 1 em 1.
+  Timer1.attachInterrupt(motorCheck);   // Esta é a função que será checada de 1 em 1 segundo.
+
+ 
+  
+  LCD.backlight();
+  LCD.clear();
+  delay(500);
+  LCD.print("Ghost Rider"); 
+  delay(500);
+  LCD.noDisplay();
+  delay(500);
+  LCD.display();
+  delay(500);
+  LCD.noDisplay();
+  delay(500);
+  LCD.display();
+  
+  
+  
+
+ 
+}
+
+void loop() {
+ 
+
+}
+
+
+void motorCheck() {                       // Esta função será chamada de 1 em 1 segundo.
+if (digitalRead(motor) == 1){             // Se o motor está desligado.
+    motorOffCounter++;                    // Aumenta a variável em 1.
+    if (motorOffCounter < 10) {            // Enquanto a variável for menor do que 10.
+      digitalWrite(desligar, HIGH);
+    } else if (motorOffCounter == 10) {   // Caso a variável seja maior do que 10.
+      desligarGeral();                    // Função que desligará o motor.
+    }
+  } else {                                // Se o motor estiver ligado
+    motorOffCounter = 0;                  // Reseta a variável
+    }
+
+ 
+if (digitalRead(motor) == 0){               // Se o motor está ligado.
+    motorOnCounter++;                       // Aumenta a variável em 1.
+    if (motorOnCounter < 5) {               // Enquanto a variável for menor do que 5.
+      digitalWrite(hho, HIGH);
+    } else if (motorOnCounter == 5) {       // Caso a variável seja maior do que 5.
+      ligarHho();                           // Função que ligará o hho.  
+    }
+  } else {                                  // Se o motor estiver desligado
+    motorOnCounter = 1;                     // Reseta a variável
+    desligarHho();
+    }
+
+
+
+
+      
+}
+
+void desligarGeral() {
+  
+ 
+  digitalWrite(desligar, LOW);
+  delay(100000);
+  digitalWrite(desligar, HIGH);
+  }
+
+
+
+void desligarHho() {
+  digitalWrite(hho, HIGH);
+  digitalWrite(efie, HIGH);
+  digitalWrite(mapCity, HIGH);
+  }
+
+
+
+void ligarHho() {
+  digitalWrite(hho, LOW);
+  digitalWrite(efie, LOW);
+  digitalWrite(mapCity, LOW);
+  }
