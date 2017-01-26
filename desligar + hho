@@ -3,14 +3,15 @@
 #include <TimerOne.h>            // http://playground.arduino.cc/Code/Timer1
 
 
-#define led 7            // pino led
-#define motor 12         // pino leitura da bomba de combustivel
-#define chave 13         // pino leitua pos chave
-#define geral 2          // rele on/off pos chave
-#define hho 3            // rele do gerador hho
-#define efie 4           // rele on/off enganador de sonda lambida EFIE
-#define mapCity 5        // rele on/off enganador sensor MAP
-#define mapRoad 6        // rele enganador sensor MAP, altera posicao City e Road
+
+#define motor             // pino leitura da bomba de combustivel
+#define chave             // pino leitua pos chave
+#define geral 8            // rele on/off pos chave
+#define hho 13            // rele do gerador hho
+#define efie 12           // rele on/off enganador de sonda lambida EFIE
+#define mapCity 11         // rele on/off enganador sensor MAP
+#define mapRoad 10         // rele enganador sensor MAP, altera posicao City e Road
+#define tps 9              // rele enganador do TPS
 
 LiquidCrystal_I2C LCD(0x27,16,2); // define pinos de ligação do LCD
 
@@ -20,7 +21,7 @@ int motorOnCounter = 0;  //conta tempo depois quem motor ligar 1 em 1 segundo
 
 
 void setup() {
-  pinMode(led, OUTPUT);
+ 
   pinMode(motor, INPUT_PULLUP);
   pinMode(chave, INPUT_PULLUP);
   pinMode(geral, OUTPUT);
@@ -28,13 +29,14 @@ void setup() {
   pinMode(efie, OUTPUT);
   pinMode(mapCity, OUTPUT);
   pinMode(mapRoad, OUTPUT);
+  pinMode(tps, OUTPUT);
   
-  digitalWrite(led, LOW);
   digitalWrite(hho, HIGH);
   digitalWrite(geral, HIGH);
   digitalWrite(efie, HIGH);
   digitalWrite(mapCity, HIGH);
   digitalWrite(mapRoad, HIGH);
+  digitalWrite(tps, HIGH);
   
   LCD.init();                           // initialize the lcd
   Timer1.initialize();                  // Inicializa contador, sem argumentos, assume contar de 1 em 1.
@@ -67,13 +69,13 @@ void loop() {
 }
 
 
-void motorCheck() {                       // Esta função será chamada de 1 em 1 segundo.
-if (digitalRead(motor) == 1){             // Se o motor está desligado.
-    motorOffCounter++;                    // Aumenta a variável em 1.
+void motorCheck() {                        // Esta função será chamada de 1 em 1 segundo.
+if (digitalRead(motor) == 1){              // Se o motor está desligado.
+    motorOffCounter++;                     // Aumenta a variável em 1.
     if (motorOffCounter < 10) {            // Enquanto a variável for menor do que 10.
       digitalWrite(geral, HIGH);
     } else if (motorOffCounter == 10) {   // Caso a variável seja maior do que 10.
-      desligarGeral();                    // Função que desligará o motor.
+      desligarGeral();                    // Função que desligará o rele gera(chave geral).
     }
   } else {                                // Se o motor estiver ligado
     motorOffCounter = 0;                  // Reseta a variável
@@ -106,16 +108,17 @@ void desligarGeral() {
 
 
 
-void desligarHho() {
-  digitalWrite(hho, HIGH);
-  digitalWrite(efie, HIGH);
-  digitalWrite(mapCity, HIGH);
-  }
-
 
 
 void ligarHho() {
   digitalWrite(hho, LOW);
   digitalWrite(efie, LOW);
   digitalWrite(mapCity, LOW);
+  }
+
+
+void desligarHho() {
+  digitalWrite(hho, HIGH);
+  digitalWrite(efie, HIGH);
+  digitalWrite(mapCity, HIGH);
   }
