@@ -4,14 +4,14 @@
 
 
 
-#define motor             // pino leitura da bomba de combustivel
-#define chave             // pino leitua pos chave
-#define geral 8            // rele on/off pos chave
-#define hho 13            // rele do gerador hho
-#define efie 12           // rele on/off enganador de sonda lambida EFIE
-#define mapCity 11         // rele on/off enganador sensor MAP
-#define mapRoad 10         // rele enganador sensor MAP, altera posicao City e Road
-#define tps 9              // rele enganador do TPS
+#define motor 4             // pino leitura da bomba de combustivel
+#define chave 5             // pino leitua pos chave
+#define geral 6             // rele on/off pos chave
+#define hho 13              // rele do gerador hho
+#define efie 12             // rele on/off enganador de sonda lambida EFIE
+#define mapCity 11          // rele on/off enganador sensor MAP
+#define mapRoad 8           // rele enganador sensor MAP, altera posicao City e Road
+#define tps 7               // rele enganador do TPS
 
 LiquidCrystal_I2C LCD(0x27,16,2); // define pinos de ligação do LCD
 
@@ -46,15 +46,15 @@ void setup() {
   
   LCD.backlight();
   LCD.clear();
-  delay(500);
+  delay(5000);
   LCD.print("Ghost Rider"); 
-  delay(500);
+  delay(5000);
   LCD.noDisplay();
-  delay(500);
+  delay(5000);
   LCD.display();
-  delay(500);
+  delay(5000);
   LCD.noDisplay();
-  delay(500);
+  delay(5000);
   LCD.display();
   
   
