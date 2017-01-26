@@ -4,6 +4,8 @@
 
 
 
+#define alarmOff 2          // pino leitura do alarme destravado (puslo -12v do modulo positron) 
+#define alarmOn 3           // pino leitura do alarme travado (puslo -12v do modulo positron)
 #define motor 4             // pino leitura da bomba de combustivel
 #define chave 5             // pino leitua pos chave
 #define geral 6             // rele on/off pos chave
@@ -22,6 +24,8 @@ int motorOnCounter = 0;  //conta tempo depois quem motor ligar 1 em 1 segundo
 
 void setup() {
  
+  pinMode(alarmOff, INPUT_PULLUP);
+  pinMode(alarmOn, INPUT_PULLUP);
   pinMode(motor, INPUT_PULLUP);
   pinMode(chave, INPUT_PULLUP);
   pinMode(geral, OUTPUT);
