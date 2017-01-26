@@ -6,7 +6,7 @@
 #define led 7            // pino led
 #define motor 12         // pino leitura da bomba de combustivel
 #define chave 13         // pino leitua pos chave
-#define desligar 2       // rele de desligar pos chave
+#define geral 2          // rele on/off pos chave
 #define hho 3            // rele do gerador hho
 #define efie 4           // rele on/off enganador de sonda lambida EFIE
 #define mapCity 5        // rele on/off enganador sensor MAP
@@ -23,7 +23,7 @@ void setup() {
   pinMode(led, OUTPUT);
   pinMode(motor, INPUT_PULLUP);
   pinMode(chave, INPUT_PULLUP);
-  pinMode(desligar, OUTPUT);
+  pinMode(geral, OUTPUT);
   pinMode(hho, OUTPUT);
   pinMode(efie, OUTPUT);
   pinMode(mapCity, OUTPUT);
@@ -31,7 +31,7 @@ void setup() {
   
   digitalWrite(led, LOW);
   digitalWrite(hho, HIGH);
-  digitalWrite(desligar, HIGH);
+  digitalWrite(geral, HIGH);
   digitalWrite(efie, HIGH);
   digitalWrite(mapCity, HIGH);
   digitalWrite(mapRoad, HIGH);
@@ -71,7 +71,7 @@ void motorCheck() {                       // Esta função será chamada de 1 em
 if (digitalRead(motor) == 1){             // Se o motor está desligado.
     motorOffCounter++;                    // Aumenta a variável em 1.
     if (motorOffCounter < 10) {            // Enquanto a variável for menor do que 10.
-      digitalWrite(desligar, HIGH);
+      digitalWrite(geral, HIGH);
     } else if (motorOffCounter == 10) {   // Caso a variável seja maior do que 10.
       desligarGeral();                    // Função que desligará o motor.
     }
@@ -101,9 +101,7 @@ if (digitalRead(motor) == 0){               // Se o motor está ligado.
 void desligarGeral() {
   
  
-  digitalWrite(desligar, LOW);
-  delay(100000);
-  digitalWrite(desligar, HIGH);
+  digitalWrite(geral, LOW);
   }
 
 
