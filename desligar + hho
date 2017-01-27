@@ -6,14 +6,14 @@
 
 #define alarmOff 2          // pino leitura do alarme destravado (puslo -12v do modulo positron) 
 #define alarmOn 3           // pino leitura do alarme travado (puslo -12v do modulo positron)
-#define motor 4             // pino leitura da bomba de combustivel
-#define chave 5             // pino leitua pos chave
-#define geral 6             // rele on/off pos chave
+#define chave 4             // pino leitua pos chave
+#define motor 5             // pino leitura da bomba de combustivel
+#define geral 8             // rele on/off pos chave
 #define hho 13              // rele do gerador hho
 #define efie 12             // rele on/off enganador de sonda lambida EFIE
 #define mapCity 11          // rele on/off enganador sensor MAP
-#define mapRoad 8           // rele enganador sensor MAP, altera posicao City e Road
-#define tps 7               // rele enganador do TPS
+#define mapRoad 10           // rele enganador sensor MAP, altera posicao City e Road
+#define tps 9               // rele enganador do TPS
 
 LiquidCrystal_I2C LCD(0x27,16,2); // define pinos de ligação do LCD
 
@@ -26,8 +26,8 @@ void setup() {
  
   pinMode(alarmOff, INPUT_PULLUP);
   pinMode(alarmOn, INPUT_PULLUP);
-  pinMode(motor, INPUT_PULLUP);
   pinMode(chave, INPUT_PULLUP);
+  pinMode(motor, INPUT_PULLUP);
   pinMode(geral, OUTPUT);
   pinMode(hho, OUTPUT);
   pinMode(efie, OUTPUT);
@@ -36,7 +36,7 @@ void setup() {
   pinMode(tps, OUTPUT);
   
   digitalWrite(hho, HIGH);
-  digitalWrite(geral, HIGH);
+  digitalWrite(geral, LOW);
   digitalWrite(efie, HIGH);
   digitalWrite(mapCity, HIGH);
   digitalWrite(mapRoad, HIGH);
@@ -50,16 +50,17 @@ void setup() {
   
   LCD.backlight();
   LCD.clear();
-  delay(5000);
+  delay(1000);
   LCD.print("Ghost Rider"); 
-  delay(5000);
+  delay(1000);
   LCD.noDisplay();
-  delay(5000);
+  delay(1000);
   LCD.display();
-  delay(5000);
+  delay(1000);
   LCD.noDisplay();
-  delay(5000);
+  delay(1000);
   LCD.display();
+  LCD.clear();
   
   
   
@@ -68,7 +69,13 @@ void setup() {
 }
 
 void loop() {
- 
+
+LCD.print("HOLD ON");
+delay(10000);
+LCD.backlight();
+delay(1000);
+LCD.blink();
+
 
 }
 
@@ -77,7 +84,6 @@ void motorCheck() {                        // Esta função será chamada de 1 e
 if (digitalRead(motor) == 1){              // Se o motor está desligado.
     motorOffCounter++;                     // Aumenta a variável em 1.
     if (motorOffCounter < 10) {            // Enquanto a variável for menor do que 10.
-      digitalWrite(geral, HIGH);
     } else if (motorOffCounter == 10) {   // Caso a variável seja maior do que 10.
       desligarGeral();                    // Função que desligará o rele gera(chave geral).
     }
@@ -91,7 +97,7 @@ if (digitalRead(motor) == 0){               // Se o motor está ligado.
     if (motorOnCounter < 5) {               // Enquanto a variável for menor do que 5.
       digitalWrite(hho, HIGH);
     } else if (motorOnCounter == 5) {       // Caso a variável seja maior do que 5.
-      ligarHho();                           // Função que ligará o hho.  
+      ligarHho();                           // Função que ligará o hho.
     }
   } else {                                  // Se o motor estiver desligado
     motorOnCounter = 1;                     // Reseta a variável
