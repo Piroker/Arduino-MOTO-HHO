@@ -9,7 +9,7 @@
 #define chave 2             // pino leitua pos chave
 #define motor 3             // pino leitura da bomba de combustivel
 #define geral 7             // rele on/off pos chave
-#define hho 8              // rele do gerador hho
+#define hho 8               // rele do gerador hho
 #define efie 12             // rele on/off enganador de sonda lambida EFIE
 #define mapCity 11          // rele on/off enganador sensor MAP
 #define mapRoad 10           // rele enganador sensor MAP, altera posicao City e Road
@@ -19,6 +19,9 @@ LiquidCrystal_I2C LCD(0x27,16,2); // define pinos de ligação do LCD
 
 int motorOffCounter = 0; //conta tempo depois quem motor desligar 1 em 1 segundo
 int motorOnCounter = 0;  //conta tempo depois quem motor ligar 1 em 1 segundo
+
+boolean hhoOn = 0;
+
 
 
 
@@ -70,7 +73,18 @@ void setup() {
 }
 
 void loop() {
-
+ hhoOn = digitalRead(hho);
+ 
+  
+  if (hhoOn == LOW)            // se rele hho estiver ligado?
+  {
+    LCD.setCursor(0,1);         // seta o cursor para primeira coluna da segunda linha
+    LCD.print("HHO ON ");        // escr3eve no LCD
+  }
+  else {                         // se não...         
+         LCD.setCursor(0,1);     // seta o cursor para primeira coluna da segunda linha
+         LCD.print("HHO OFF");   // escr3eve no LCD
+    }
 
 
 
