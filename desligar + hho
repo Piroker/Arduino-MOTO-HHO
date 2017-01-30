@@ -4,16 +4,16 @@
 
 
 
-#define alarmOff 2          // pino leitura do alarme destravado (puslo -12v do modulo positron) 
-#define alarmOn 3           // pino leitura do alarme travado (puslo -12v do modulo positron)
-#define chave 4             // pino leitua pos chave
-#define motor 5             // pino leitura da bomba de combustivel
-#define geral 8             // rele on/off pos chave
-#define hho 13              // rele do gerador hho
+#define alarmOn 0           // pino leitura do alarme travado (puslo -12v do modulo positron) 
+#define alarmOff 1          // pino leitura do alarme destravado (puslo -12v do modulo positron)
+#define chave 2             // pino leitua pos chave
+#define motor 3             // pino leitura da bomba de combustivel
+#define geral 7             // rele on/off pos chave
+#define hho 8              // rele do gerador hho
 #define efie 12             // rele on/off enganador de sonda lambida EFIE
 #define mapCity 11          // rele on/off enganador sensor MAP
 #define mapRoad 10           // rele enganador sensor MAP, altera posicao City e Road
-#define tps 9               // rele enganador do TPS
+#define tps 9                // rele enganador do TPS
 
 LiquidCrystal_I2C LCD(0x27,16,2); // define pinos de ligação do LCD
 
@@ -24,8 +24,8 @@ int motorOnCounter = 0;  //conta tempo depois quem motor ligar 1 em 1 segundo
 
 void setup() {
  
-  pinMode(alarmOff, INPUT_PULLUP);
   pinMode(alarmOn, INPUT_PULLUP);
+  pinMode(alarmOff, INPUT_PULLUP);
   pinMode(chave, INPUT_PULLUP);
   pinMode(motor, INPUT_PULLUP);
   pinMode(geral, OUTPUT);
@@ -61,6 +61,7 @@ void setup() {
   delay(1000);
   LCD.display();
   LCD.clear();
+  LCD.print("Ghost Rider");
   
   
   
@@ -70,11 +71,7 @@ void setup() {
 
 void loop() {
 
-LCD.print("HOLD ON");
-delay(10000);
-LCD.backlight();
-delay(1000);
-LCD.blink();
+
 
 
 }
