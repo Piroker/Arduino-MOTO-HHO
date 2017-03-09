@@ -13,16 +13,17 @@
 
 #define alarmeOn 0           // pino leitura do alarme travado    (puslo -12v vindo do modulo de alarme positron) 
 #define alarmeOff 1          // pino leitura do alarme destravado (puslo -12v vindo do modulo de alarme positron)
-#define geral 6              // rele on/off pos chave (liga e desliga chave geral da moto, substitui o uso da chave de ignição)
-#define pinoSensor A1        // pino leitura do sensor de teperatura
-#define butMenu 5            // pino leitura do botão menu
-#define butSet 4             // pino leitura do botão set
 #define motor 3              // pino leitura do estatus motor(motor deligado ou ligado +12v)
+#define butSet 4             // pino leitura do botão set
+#define butMenu 5            // pino leitura do botão menu
+#define geral 6              // rele on/off pos chave (liga e desliga chave geral da moto, substitui o uso da chave de ignição)
 #define hho 7                // rele on/off HHO (liga e desliga gerador de hidrogenio)
 #define efie 8               // rele on/off EFIE (liga e desliga o enganador do sensor sonda lambda(faz leitura dos gases no escapamento)) 
 #define map 9                // rele on/off MAP (liga e desliga o enganador de sensor MAP(faz leitura da pressão absoluta no coletor de admição))
-#define mapRoad 11           // rele MapCity/MapRoad (comuta posições city e road do enganador de sensor MAP)
-#define TPS 12               // rele on/off TPS (liga e desliga o enganador de sensor TPS(faz leitura da posiçao do acelerador/borboleta))
+#define mapRoad 10           // rele MapCity/MapRoad (comuta posições city e road do enganador de sensor MAP)
+#define tps 11               // rele on/off TPS (liga e desliga o enganador de sensor TPS(faz leitura da posiçao do acelerador/borboleta))
+#define pinSensorMap A0      // pino leitura do sensor MPA
+#define pinSensorTps A1      // pino leitura do sensor TPS
 
 
 
@@ -67,9 +68,9 @@ void desligarHho();
   boolean t_alarmeOff;              // flags para armazenar estado dos pinos do Alarme, pino off
   boolean t_butMenu, t_butSet;      // flags para armazenar estado dos botoes
 
-  int sensorLM35;                   // variavel pra armazenar valor da tensao analogica enviado pelo sensor
-  float grausCelcius;               //  converte valor do sensor em graus Celcius
-  float grausFahrenheit;            //  converte valor do sensor em graus Fahrenheit
+  int sensorTps;                    // variavel pra armazenar valor da tensao analogica enviado pelo sensor TPS
+  int sensorMap;                    // variavel pra armazenar valor da tensao analogica enviado pelo sensor MAP
+  float valorTps;                   // converte valor do sensor em percentual do acelerador
  
   unsigned long delay1 = 0;         // variável pra armasenar o numero do timer diminuido de millis
   unsigned long delay2 = 0;         // variável pra armasenar o numero do timer diminuido de millis
@@ -96,22 +97,14 @@ byte grau[8] ={ B01100,
 // --- void setup() ---
 
 void setup() {
-
-
-
+  
   LCD.init();                 // initialize the lcd
-
-  pinMode (butMenu, INPUT_PULLUP);
-  pinMode (butSet, INPUT_PULLUP);
-  pinMode (motor, INPUT_PULLUP);
-  pinMode (motor, INPUT_PULLUP);
-  pinMode (alarmeOn, INPUT_PULLUP);
-  pinMode (alarmeOff, INPUT_PULLUP);
-  pinMode (geral, OUTPUT);
-  pinMode (sensorLM35, INPUT);
-  pinMode (hho, OUTPUT);
-  pinMode (mapCity, OUTPUT);
-  pinMode (efie, OUTPUT);
+  
+  for(char i=0; i<5; i++) pinMode(i, INPUT_PULLUP);  // laço FOR para determinar pinos do 0 ao 4 como INPUT_PULLUP
+  for(char i=6; i<12; i++) pinMode(i, INPUT_PULLUP); // laço FOR para determinar pinos do 6 ao 11 como OUTPUT 
+  pinMode (pinSensorTps, INPUT);
+  pinMode (pinSensorMap, INPUT);
+  
 
   t_alarmeOn    = 0x00;    // inicia flag em 0
   t_alarmeOff   = 0x00;    // inicia flag em 0
@@ -234,16 +227,21 @@ void dispMenu()          // mostra menu atual
 void menu1()
 {
   
-  sensorLM35 = analogRead(pinoSensor);     // varialvel sensorLM35 guarda o valor lido no pino analogico do sensor
-   
-  LCD.setCursor(0,0);
-  LCD.print("TPS: ");
-  
-  // (convertendo mV em graus) escreve no display o valor do sensor grauls celcius
-  grausCelcius = sensorLM35/10;  // converte Mv em Graus Celcius, o valor 0.48828125 é o resultado da formula: graus = ((valor do sensor*5)/1024)/0.01
-  LCD.print(grausCelcius,1);
-  LCD.print("% ");
+  sensorTps = analogRead(pinSensorTps);   // varialvel sensorTps guarda o valor lido no pino analogico do sensor TPS
+  LCD.setCursor(0,0);                     // move o cursor do LCD para a coluna 0 e linha 0
+  LCD.print("TPS: ");                     // escreve no LCD
+  valorTps = sensorTps/10;                // converte mV em percentual do acelerador para escreve no LCD
+  LCD.setCursor(5,0);                     // move o cursor do LCD para a coluna 5 e linha 0
+  LCD.print(valorTps,1);                  // escreve no LCD o valor da variavel valorTps
+  LCD.print("%  ");                       // escreve no LCD
 
+  
+  sensorMap = analogRead(pinSensorMap);   // varialvel sensorMap = o valor lido no pino analogico do sensor MAP
+  LCD.setCursor(0,1);                     // move o cursor do LCD para a coluna 0 e linha 1
+  LCD.print("MAP: ");                     // escreve no LCD
+  LCD.setCursor(5,1);                     // move o cursor do LCD para a coluna 5 e linha 1
+  LCD.print(sensorMap,1);                 // escreve no display o valor em mV do sensor MAP
+  LCD.print("mV ");  
 }  // End MENU1 
     
     
