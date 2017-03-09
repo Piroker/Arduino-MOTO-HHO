@@ -1,145 +1,417 @@
-#include <Wire.h> 
+
+//=============================================================================
+// --- bibliotecas
+
 #include <LiquidCrystal_I2C.h>   // inclui biblioteca de LCD serial I2C
-#include <TimerOne.h>            // http://playground.arduino.cc/Code/Timer1
 
 
 
-#define alarmOn 0           // pino leitura do alarme travado (puslo -12v do modulo positron) 
-#define alarmOff 1          // pino leitura do alarme destravado (puslo -12v do modulo positron)
-#define chave 2             // pino leitua pos chave
-#define motor 3             // pino leitura da bomba de combustivel
-#define geral 7             // rele on/off pos chave
-#define hho 8               // rele do gerador hho
-#define efie 12             // rele on/off enganador de sonda lambida EFIE
-#define mapCity 11          // rele on/off enganador sensor MAP
-#define mapRoad 10           // rele enganador sensor MAP, altera posicao City e Road
-#define tps 9                // rele enganador do TPS
+
+
+//=============================================================================
+// --- mapeamento de hardware ---
+
+#define alarmeOn 0           // pino leitura do alarme travado    (puslo -12v vindo do modulo de alarme positron) 
+#define alarmeOff 1          // pino leitura do alarme destravado (puslo -12v vindo do modulo de alarme positron)
+#define geral 6              // rele on/off pos chave (liga e desliga chave geral da moto, substitui o uso da chave de ignição)
+#define pinoSensor A1        // pino leitura do sensor de teperatura
+#define butMenu 5            // pino leitura do botão menu
+#define butSet 4             // pino leitura do botão set
+#define motor 3              // pino leitura do estatus motor(motor deligado ou ligado +12v)
+#define hho 7                // rele on/off HHO (liga e desliga gerador de hidrogenio)
+#define efie 8               // rele on/off EFIE (liga e desliga o enganador do sensor sonda lambda(faz leitura dos gases no escapamento)) 
+#define map 9                // rele on/off MAP (liga e desliga o enganador de sensor MAP(faz leitura da pressão absoluta no coletor de admição))
+#define mapRoad 11           // rele MapCity/MapRoad (comuta posições city e road do enganador de sensor MAP)
+#define TPS 12               // rele on/off TPS (liga e desliga o enganador de sensor TPS(faz leitura da posiçao do acelerador/borboleta))
+
+
+
+
+
+//=============================================================================
+// --- hardware do display ---
 
 LiquidCrystal_I2C LCD(0x27,16,2); // define pinos de ligação do LCD
 
-int motorOffCounter = 0; //conta tempo depois quem motor desligar 1 em 1 segundo
-int motorOnCounter = 0;  //conta tempo depois quem motor ligar 1 em 1 segundo
-
-boolean hhoOn = 0;
 
 
 
+
+//=============================================================================
+// --- Portótipo das funções auxiliares  ---
+
+void moto_on_off();      // funcao que modifica moto liga ou desligado(estado da chave geral) Controla o releGeral pelas entradas do sinal -12v do alarme
+void changeMenu();       // funcao que modifica menu
+void dispMenu();         // funcao que mostra o menu no LCD
+void menu1();            // funcao do menu1 (mudas as funcionalidades do gerador em OFF, economia e Full ECO)
+void menu2();            // funcao do menu2
+void menu3();            // funcao do menu3
+void menu4();            // funcao do menu4
+
+void motorCheck();       // funcao que verifica estado do motor(ligado ou desligado)
+void desligarGeral();    // funcao de desligar rele geral da moto 
+void ligarHho();         // funcao que    liga gerador HHO e manipuladores de sensores da ECU
+void desligarHho();
+
+
+
+
+
+//=============================================================================
+// --- variavei globais ---
+
+  char menu    = 0x01;              // variavel pra selecionar menu
+  char setHho  = 0x01;              // variavel para mudar as funcionalidades do gerador em OFF, economia e Full ECO)
+  char chave   = 0x01;              // variavael pra selecionar estado da ON OFF da moto
+  boolean t_alarmeOn;               // flags para armazenar estado dos pinos do Alarme, pino on
+  boolean t_alarmeOff;              // flags para armazenar estado dos pinos do Alarme, pino off
+  boolean t_butMenu, t_butSet;      // flags para armazenar estado dos botoes
+
+  int sensorLM35;                   // variavel pra armazenar valor da tensao analogica enviado pelo sensor
+  float grausCelcius;               //  converte valor do sensor em graus Celcius
+  float grausFahrenheit;            //  converte valor do sensor em graus Fahrenheit
+ 
+  unsigned long delay1 = 0;         // variável pra armasenar o numero do timer diminuido de millis
+  unsigned long delay2 = 0;         // variável pra armasenar o numero do timer diminuido de millis
+
+
+
+
+
+//=============================================================================
+// --- Array pra desenhar o caracter de graus celcius ---
+  
+byte grau[8] ={ B01100,
+                   B10010,
+                   B10010,
+                   B01100,
+                   B00000,
+                   B00000,
+                   B00000,
+                   B00000,};
+
+
+
+//=============================================================================
+// --- void setup() ---
 
 void setup() {
- 
-  pinMode(alarmOn, INPUT_PULLUP);
-  pinMode(alarmOff, INPUT_PULLUP);
-  pinMode(chave, INPUT_PULLUP);
-  pinMode(motor, INPUT_PULLUP);
-  pinMode(geral, OUTPUT);
-  pinMode(hho, OUTPUT);
-  pinMode(efie, OUTPUT);
-  pinMode(mapCity, OUTPUT);
-  pinMode(mapRoad, OUTPUT);
-  pinMode(tps, OUTPUT);
-  
+
+
+
+  LCD.init();                 // initialize the lcd
+
+  pinMode (butMenu, INPUT_PULLUP);
+  pinMode (butSet, INPUT_PULLUP);
+  pinMode (motor, INPUT_PULLUP);
+  pinMode (motor, INPUT_PULLUP);
+  pinMode (alarmeOn, INPUT_PULLUP);
+  pinMode (alarmeOff, INPUT_PULLUP);
+  pinMode (geral, OUTPUT);
+  pinMode (sensorLM35, INPUT);
+  pinMode (hho, OUTPUT);
+  pinMode (mapCity, OUTPUT);
+  pinMode (efie, OUTPUT);
+
+  t_alarmeOn    = 0x00;    // inicia flag em 0
+  t_alarmeOff   = 0x00;    // inicia flag em 0
+  setHho        = 0x02;    // inicia flag em 2
+
+
+  LCD.backlight();         // liga luz de fundo do LCD    
+  LCD.clear();             // limpa caracteres do LCD
+
   digitalWrite(hho, HIGH);
-  digitalWrite(geral, LOW);
-  digitalWrite(efie, HIGH);
-  digitalWrite(mapCity, HIGH);
-  digitalWrite(mapRoad, HIGH);
-  digitalWrite(tps, HIGH);
-  
-  LCD.init();                           // initialize the lcd
-  Timer1.initialize();                  // Inicializa contador, sem argumentos, assume contar de 1 em 1.
-  Timer1.attachInterrupt(motorCheck);   // Esta é a função que será checada de 1 em 1 segundo.
+  }  // end off setup
 
- 
-  
-  LCD.backlight();
-  LCD.clear();
-  delay(1000);
-  LCD.print("Ghost Rider"); 
-  delay(1000);
-  LCD.noDisplay();
-  delay(1000);
-  LCD.display();
-  delay(1000);
-  LCD.noDisplay();
-  delay(1000);
-  LCD.display();
-  LCD.clear();
-  LCD.print("Ghost Rider");
-  
-  
-  
 
- 
-}
+
+
+  
+//==============================================================================================
+// --- void loop() ---
 
 void loop() {
- hhoOn = digitalRead(hho);
+
+
+  moto_on_off();  // chama a função 
+  motorCheck();   // chama a função 
+  changeMenu();   // chama a função 
+  dispMenu();     // chama a função 
+  delay,(100);
+  } //  LOOP END
+
+
  
+
+
+//=============================================================================
+// --- Modifica o estado atual da moto(ligado ou desligada) ---
+
+void moto_on_off() { 
+
   
-  if (hhoOn == LOW)            // se rele hho estiver ligado?
+  if(!digitalRead(alarmeOn))     t_alarmeOn   = 0x01;      // se alame on   foi precionado? muda a FLAG
+  if(!digitalRead(alarmeOff))    t_alarmeOff  = 0x01;      // se alame off  foi precionado? muda a FLAG
+
+  
+  if(digitalRead(alarmeOn) && t_alarmeOn)     // se alame on e FLG estiver setada?
+  {                                           // sim
+    t_alarmeOn = 0x00;                        // limpa flag
+
+    ligarGeral();                             // chama a função igarGeral
+    chave++;                                  // incrementa chave
+    
+    if(chave > 0x01) chave = 0x00;            // se chave for maior que 1, volta a ser 0
+  }// END of AlarmeOn 
+  
+
+  
+  if(digitalRead(alarmeOff) && t_alarmeOff)   // se alame off e FLG estiver setada?
+  {                                           // sim
+    t_alarmeOff = 0x00;                       // limpa flag
+    
+    desligarGeral();                          // chama a função desigarGeral
+    chave--;                                  // decrementa chave
+       
+    if(chave < 0x00) chave = 0x01;            // se chave for menor que 0, volta a ser 1  
+  }  // END of alarmeOff  
+}    // END moto_on_off
+
+
+
+
+//=============================================================================
+// ---  Modifica o Menu atual) ---
+
+void changeMenu() {
+  
+  
+  if(!digitalRead(butMenu))     t_butMenu = 0x01;   // se butao menu foi precionado? muda a FLAG
+  
+  
+  if(digitalRead(butMenu) && t_butMenu)             // se botao menu foi solto e FLG estiver setada?
+  {                                                 // sim
+    t_butMenu = 0x00;                               // limpa flag
+    LCD.clear();                                    // limpa o LCD
+    menu++;                                         // incrementa menu
+    if(menu == 0x04) menu = 0x01;                   // se menu for igual 3, volta a ser 1
+  }  // END of butmenu  
+}    // END changeMenu
+
+
+
+
+
+void dispMenu()          // mostra menu atual
+{    
+  
+  switch(menu)           // controle da variavel menu
   {
-    LCD.setCursor(0,1);         // seta o cursor para primeira coluna da segunda linha
-    LCD.print("HHO ON ");        // escr3eve no LCD
-  }
-  else {                         // se não...         
-         LCD.setCursor(0,1);     // seta o cursor para primeira coluna da segunda linha
-         LCD.print("HHO OFF");   // escr3eve no LCD
-    }
+    case 0x01:           // caso 1
+         menu1();        // chama a funcao menu1
+         break;          // break
+        
+     case 0x02:          // caso 2
+         menu2();        // chama a funcao menu2
+         break;          // break
+         
+     case 0x03:          // caso 3
+         menu3();        // chama a funcao do menu 3
+         break;          // break
+         
+      case 0x04:         // caso 4
+         menu4();        // chama a funcao do menu 4
+         break;          // break   
+  }  // end of menuHho 
+}    // end of dispMenu
 
 
 
-}
+//=============================================================================
+// ---  funcao  - MENU1 ---
 
-
-void motorCheck() {                        // Esta função será chamada de 1 em 1 segundo.
-if (digitalRead(motor) == 1){              // Se o motor está desligado.
-    motorOffCounter++;                     // Aumenta a variável em 1.
-    if (motorOffCounter < 10) {            // Enquanto a variável for menor do que 10.
-    } else if (motorOffCounter == 10) {   // Caso a variável seja maior do que 10.
-      desligarGeral();                    // Função que desligará o rele gera(chave geral).
-    }
-  } else {                                // Se o motor estiver ligado
-    motorOffCounter = 0;                  // Reseta a variável
-    }
-
- 
-if (digitalRead(motor) == 0){               // Se o motor está ligado.
-    motorOnCounter++;                       // Aumenta a variável em 1.
-    if (motorOnCounter < 5) {               // Enquanto a variável for menor do que 5.
-      digitalWrite(hho, HIGH);
-    } else if (motorOnCounter == 5) {       // Caso a variável seja maior do que 5.
-      ligarHho();                           // Função que ligará o hho.
-    }
-  } else {                                  // Se o motor estiver desligado
-    motorOnCounter = 1;                     // Reseta a variável
-    desligarHho();
-    }
-
-
-
-
-      
-}
-
-void desligarGeral() {
+void menu1()
+{
   
- 
+  sensorLM35 = analogRead(pinoSensor);     // varialvel sensorLM35 guarda o valor lido no pino analogico do sensor
+   
+  LCD.setCursor(0,0);
+  LCD.print("TPS: ");
+  
+  // (convertendo mV em graus) escreve no display o valor do sensor grauls celcius
+  grausCelcius = sensorLM35/10;  // converte Mv em Graus Celcius, o valor 0.48828125 é o resultado da formula: graus = ((valor do sensor*5)/1024)/0.01
+  LCD.print(grausCelcius,1);
+  LCD.print("% ");
+
+}  // End MENU1 
+    
+    
+
+
+
+//=============================================================================
+// ---  funcao  - MENU2 ---
+
+  void menu2()            
+{
+
+  LCD.setCursor(0,0);
+  LCD.print("Modo do Gerador:");
+    
+  if(!digitalRead(butSet))  t_butSet = 0x01;  // se butão set  foi precionado? muda a FLAG
+  
+  if(digitalRead(butSet) && t_butSet)         // botão set solto e flag setada?
+  {                                           // sim...
+    t_butSet = 0x00;                          // limpa flag
+    setHho++;                                 // incremeta set1
+
+    if(setHho > 2) setHho = 0x01;             // se maior que 2, volta a ser 1
+     switch(setHho)                           // controle do set1
+    {
+         case 0x01:                           // caso 1
+               LCD.setCursor(0,1);            // move cursor, coluna 1, linha 2
+               LCD.print("Off       ");       // escreve no LCD
+               break;                         // brake
+         case 0x02:                           // caso 2
+               LCD.setCursor(0,1);            // move cursor, coluna 1, linha 2
+               LCD.print("Automatico");       // escreve no LCD
+               break;                         // brake 
+                 
+    }  // end switch setHho    
+  }    // end butSet  
+}      // end menu2
+
+
+
+
+
+
+//=============================================================================
+// ---  funcao  - MENU3 ---
+
+ void menu3()                  
+{
+
+  LCD.setCursor(0,0);
+  LCD.print("Menu 3");
+  LCD.setCursor(0,1);
+  LCD.print("Crie seu codigo");           // a apenas ilustrativo.
+
+}  //End of menu 3
+   
+
+
+
+
+
+//=============================================================================
+// ---  funcao  - MENU4 ---
+
+void menu4()                  
+{
+  
+  LCD.noBacklight();                      // desliga luz de fundo do LCD    
+  LCD.clear();                            // limpa caracteres do LCD
+}  //End menu4
+
+
+
+
+
+//=============================================================================
+// ---  funcao que checa se motor ligado ou desligado  ---
+
+void motorCheck(){
+
+   if (digitalRead(motor) == 0){           // se motro ligar
+    if ((millis() - delay1) >= 5000){      // e delay1 for maior que millis
+        ligarGeral();                      // chama a função ligarGeral
+        chave = 0x00;                      // flag que liga tela
+    if ((millis() - delay1) >= 60000){     // quando delay1 for maior que... desliga geral
+       ligarHho();                         // chama função ligarHho
+    }
+    }
+  } else {                                 //  ou se, motor ligar
+    (digitalRead(motor) == 1); {           //  reseta delay1 = mmillis
+    delay1 = millis();
+    }  
+  }  // end motor ligado
+  
+  
+   if (digitalRead(motor) == 1){                 // se moto desligar
+   if ((millis() - delay2) <= 50){               // e delay2 for menos que millis
+        desligarHho();                           // chama função ligarHho
+    } else if ((millis() - delay2) >= 600000) {  // quando delay2 for maior que... desliga geral
+      desligarGeral();                           // chama função desligaGeral
+    } 
+  } else {                                       // ou se, motor ligar
+    (digitalRead(motor) == 0); {                 // reseta delay2 = mmillis
+    delay2 = millis();
+    }  
+  }  // end motor desligado  
+}    // end motorCheck
+
+
+
+
+
+//=============================================================================
+// ---  funcao que liga chave geral  ---
+
+ void ligarGeral() {
+
+  LCD.backlight();                     // liga luz de fundo do LCD
+  LCD.clear();                         // limpa o LCD
+  digitalWrite(geral, HIGH); 
+  menu = 0x01;
+  menu1();
+ }  // end ligarGEral
+
+
+
+
+
+//=============================================================================
+// ---  funcao que desligar chave geral  ---
+
+ void desligarGeral() {
   digitalWrite(geral, LOW);
-  }
+  menu = 0x04;
+  menu4();
+ }  // end desligarGEral
 
 
 
 
 
-void ligarHho() {
-  digitalWrite(hho, LOW);
-  digitalWrite(efie, LOW);
-  digitalWrite(mapCity, LOW);
-  }
+//=============================================================================
+// ---  funcao que liga Gerador de hidrogenio  ---
 
+void ligarHho() { 
+  if (setHho == 0x02){               
+    digitalWrite(hho, LOW);
+    digitalWrite(efie, LOW);
+    digitalWrite(mapCity, LOW);
+    } else {                                     
+      digitalWrite(hho, HIGH);
+      digitalWrite(efie, HIGH);
+      digitalWrite(mapCity, HIGH);   
+    }  
+ }  // end ligarHho
+
+
+
+
+
+//=============================================================================
+// ---  funcao que desliga Gerador de hidrogenio  ---
 
 void desligarHho() {
   digitalWrite(hho, HIGH);
   digitalWrite(efie, HIGH);
   digitalWrite(mapCity, HIGH);
-  }
+ }  // end desligarHho
+     
+
+
